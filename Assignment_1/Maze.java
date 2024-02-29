@@ -3,283 +3,187 @@ import java.io.FileNotFoundException;
 import java.util.Scanner;
 
 public class Maze {
-    private String[] map;
+  private String[] map;
 
-    public Maze(String filename) {
-        try {
-            this.map = mazeReader(new Scanner(new File(filename)));
-        }
-        catch (FileNotFoundException e) {
-            this.map = new String[0];
-        }
+  public Maze(String filename) {
+    try {
+      Scanner scanner = new Scanner(new File(filename));
+      int rows = Integer.parseInt(scanner.nextLine());
+      map = new String[rows];
+      fillMap(scanner, 0);
+      scanner.close();
+    } catch (FileNotFoundException e) {
+      map = new String[0];
+    }
+  }
+
+  private void fillMap(Scanner scanner, int index) {
+    if (scanner.hasNextLine() && index < map.length) {
+      map[index] = scanner.nextLine();
+      fillMap(scanner, index + 1);
+    }
+  }
+
+  public Maze(Maze other) {
+    this.map = other.map.clone();
+  }
+
+  @Override
+  public String toString() {
+    if (map.length == 0) {
+      return "Empty Map";
+    } else {
+      return toString(0);
+    }
+  }
+
+  private String toString(int index) {
+    if (index >= map.length) {
+      return "";
+    } else {
+      return map[index] + "\n" + toString(index + 1);
+    }
+  }
+
+  private boolean isValidCoordinate(int x, int y) {
+    return map != null && y >= 0 && y < map.length && map[y] != null && x >= 0 && x < map[y].length()
+        && map[y].charAt(x) != 'X';
+  }
+
+  public boolean validSolution(int startX, int startY, int goalX, int goalY, LinkedList path) {
+    if (path.head == null || path.reversed().head == null) {
+      return false;
+    } else if (path.head.x != startX || path.head.y != startY || path.length() == 0 || path.reversed().head.x != goalX
+        || path.reversed().head.y != goalY) {
+      return false;
     }
 
-    private String[] mazeReader(Scanner sc) {
-        if (!sc.hasNextLine()) {
-            return new String[0];
-        }
-        int nRows = Integer.parseInt(sc.nextLine());
-        String[] maze = new String[nRows];
-        mazeLinesReader(sc, maze, 0);
-        return maze;
+    return validSolution(path.head, path.head.next);
+  }
+
+  private boolean validSolution(CoordinateNode current, CoordinateNode next) {
+    if (next == null) {
+      return true;
+    } else if (Math.abs(current.x - next.x) + Math.abs(current.y - next.y) != 1 || !isValidCoordinate(next.x, next.y)
+        || current == null || next == null) {
+      return false;
+    } else {
+      return validSolution(next, next.next);
     }
+  }
 
-    private void mazeLinesReader(Scanner sc, String[] maze, int row) {
-        if (row >= maze.length || !sc.hasNextLine()) {
-            return;
+  private LinkedList solve(int x, int y, int goalX, int goalY, LinkedList path) {
+    if (x == goalX && y == goalY) {
+        if (path != null) {
+            path.append(x, y);
+            return path;
+        } else {
+            return new LinkedList();
         }
-        maze[row] = sc.nextLine();
-        mazeLinesReader(sc, maze, row + 1);
+    } else if (!isValidCoordinate(x, y) || (path != null && path.contains(x, y))) {
+        return new LinkedList();
+    } else {
+        LinkedList newPath = new LinkedList();
+        if (path != null) {
+            newPath.appendList(path);
+        }
+        newPath.append(x, y);
+
+        LinkedList result = solve(x - 1, y, goalX, goalY, newPath);
+        if (result.length() > 0) return result;
+
+        result = solve(x, y - 1, goalX, goalY, newPath);
+        if (result.length() > 0) return result;
+
+        result = solve(x, y + 1, goalX, goalY, newPath);
+        if (result.length() > 0) return result;
+
+        result = solve(x + 1, y, goalX, goalY, newPath);
+        if (result.length() > 0) return result;
+
+        return new LinkedList();
     }
+}
 
-    public Maze(Maze other) {
-        this.map = recArrCopy(other.map, 0);
-    }
-
-    private String[] recArrCopy(String[] arr, int i) {
-        if (i >= arr.length) {
-            return new String[0];
-        }
-
-        String[] cp = recArrCopy(arr, i + 1);
-        String[] newArr = new String[cp.length + 1];
-        copyArrElements(arr, newArr, cp, i);
-        newArr[cp.length] = arr[i];
-        return newArr;
-    }
-
-    private void copyArrElements(String[] start, String[] end, String[] cp, int i) {
-        if (i >= cp.length) {
-            return;
-        }
-
-        end[i] = start[i];
-        copyArrElements(start, end, cp, i + 1);
-    }
-
-    @Override
-    public String toString() {
-        if (map.length == 0) {
-            return "Empty Map";
-        }
-        else
-        {
-            return recToString(this.map, 0);
-        }
-    }
-
-    private String recToString(String[] arr, int i) {
-        if (i == arr.length - 1) {
-            return arr[i];
-        }
-        else
-        {
-            return arr[i] + "\n" + recToString(arr, i + 1);
-        }
-    }
-
-    public boolean validSolution(int startX, int startY, int goalX, int goalY, LinkedList path) {
-        if (path.head == null || path.head.x != startX || path.head.y != startY ||
-            findTailRecursive(path.head).x != goalX || findTailRecursive(path.head).y != goalY) {
-            return false;
-        }
-        boolean[][] visited = new boolean[map.length][map[0].length()];
-        return isValidPath(startX, startY, goalX, goalY, path.head.next, path.head, visited);
-    }
-
-    private boolean isValidPath(int startX, int startY, int goalX, int goalY, CoordinateNode node, CoordinateNode prevNode, boolean[][] visited) {
-        if (node == null) {
-            return prevNode.x == goalX && prevNode.y == goalY;
-        }
-        if (node.x < 0 || node.y < 0 || node.x >= map.length ||
-            node.y >= map[0].length() || map[node.x].charAt(node.y) == 'X') {
-            return false;
-        }
-        if (Math.abs(node.x - prevNode.x) + Math.abs(node.y - prevNode.y) != 1) {
-            return false;
-        }
-        if (visited[node.x][node.y]) {
-            return false;
-        }
-        visited[node.x][node.y] = true;
-        return isValidPath(startX, startY, goalX, goalY, node.next, node, visited);
-    }
-
-    private CoordinateNode findTailRecursive(CoordinateNode node) {
-        if (node == null || node.next == null) {
-            return node;
-        }
-        return findTailRecursive(node.next);
-    }
-
-    private boolean isVisited(CoordinateNode node, CoordinateNode pathNode) {
-        if (pathNode == null) {
-            return false;
-        }
-        if (node.x == pathNode.x && node.y == pathNode.y) {
-            return true;
-        }
-        return isVisited(node, pathNode.next);
-    }
 
   public String solve(int x, int y, int goalX, int goalY) {
-    LinkedList path = new LinkedList();
-    boolean[][] visited = new boolean[map.length][map[0].length()]; 
-    if (validSolution(x, y, goalX, goalY)) {
-      if (findPath(x, y, goalX, goalY, path, visited)) {
-        markStartAndEnd(x, y, goalX, goalY);
-        markSolutionPath(x, y, path.head, goalX, goalY);
-        return "Solution\n" + mapToString(map, 0) + "\n" + path.toString();
-      }
+    LinkedList solution = solve(x, y, goalX, goalY, new LinkedList());
+    if (solution.length() == 0 || !validSolution(x, y, goalX, goalY, solution)) {
+      return "No valid solution exists";
+    } else {
+      return "Solution\n" + printMaze(solution, 0, 0, x, y, goalX, goalY) + "\n" + solution.toString();
     }
-    return "No valid solution exists";  
   }
 
-  private boolean validSolution(int x, int y, int goalX, int goalY) {
-    if (isOutOfBounds(x, y) || isOutOfBounds(goalX, goalY)) {
-      return false; 
-    }
-    if (isBlocked(x, y) || isBlocked(goalX, goalY)) {
-      return false;
-    }
-    if (x == goalX && y == goalY) {
-      return false;
-    }
-    if (isDirectPathBlocked(x, y, goalX, goalY)) {
-      return false;
-    }
-    return true;
-  }
-  
-  private boolean isDirectPathBlocked(int x1, int y1, int x2, int y2) {
-    if (x1 == x2) {
-      for (int y = Math.min(y1, y2); y <= Math.max(y1, y2); y++) {
-        if (isBlocked(x1, y)) {
-          return true;
-        }
+  private String printMaze(LinkedList solution, int x, int y, int startX, int startY, int goalX, int goalY) {
+    if (map == null || y >= map.length) {
+      return "";
+    } else if (x >= map[y].length()) {
+      return "\n" + printMaze(solution, 0, y + 1, startX, startY, goalX, goalY);
+    } else {
+      char c = ' ';
+      if (map[y] != null && x >= 0 && x < map[y].length()) {
+        c = map[y].charAt(x);
       }
-    } 
-    else if (y1 == y2) {
-      for (int x = Math.min(x1, x2); x <= Math.max(x1, x2); x++) {
-        if (isBlocked(x, y1)) {
-          return true;
-        }
+      if (x == startX && y == startY) {
+        c = 'S';
+      } else if (x == goalX && y == goalY) {
+        c = 'E';
+      } else if (solution != null && solution.contains(x, y)) {
+        c = '@';
       }
+      return c + printMaze(solution, x + 1, y, startX, startY, goalX, goalY);
     }
-  
-    return false;
-  
-  }
-  
-  private void markStartAndEnd(int startX, int startY, int goalX, int goalY) {
-    map[startX] = updateChar(map[startX], startY, 'S');
-    map[goalX] = updateChar(map[goalX], goalY, 'E');
   }
 
-  private boolean findPath(int x, int y, int goalX, int goalY, LinkedList path, boolean[][] visited) {
-    if (x == goalX && y == goalY) {
-      return true;
-    }
-    if (isOutOfBounds(x, y) || isVisited(x, y, visited) || isBlocked(x, y)) {
-      return false;
-    }
-    visited[x][y] = true;
-    path.append(x, y);
-    if (findPath(x, y - 1, goalX, goalY, path, visited) ||  
-        findPath(x - 1, y, goalX, goalY, path, visited) ||
-        findPath(x + 1, y, goalX, goalY, path, visited) ||
-        findPath(x, y + 1, goalX, goalY, path, visited)) {
-      return true;
-    }
-    path.removeLast();
-    return false;
+  public LinkedList validStarts(int goalX, int goalY) {
+    LinkedList validStartsList = new LinkedList();
+    validStartsRecursive(0, 0, goalX, goalY, validStartsList);
+    return validStartsList;
   }
 
-  private void markSolutionPath(int startX, int startY, CoordinateNode node, int goalX, int goalY) {
-    if (node == null) {
+  private void validStartsRecursive(int x, int y, int goalX, int goalY, LinkedList validStartsList) {
+    if (x >= map.length) {
       return;
     }
-    if ((node.x == goalX && node.y == goalY) || 
-        (node.x == startX && node.y == startY)) { 
-      markSolutionPath(startX, startY, node.next, goalX, goalY);
-    } else {
-      map[node.x] = updateChar(map[node.x], node.y, '@');
-      markSolutionPath(startX, startY, node.next, goalX, goalY);
+    if (y >= map[x].length()) {
+      validStartsRecursive(x + 1, 0, goalX, goalY, validStartsList);
+      return;
     }
+    if (hasValidPath(x, y, goalX, goalY, null)) {
+      insertSorted(validStartsList, x, y);
+    }
+    validStartsRecursive(x, y + 1, goalX, goalY, validStartsList);
   }
 
-  private String updateChar(String str, int index, char newChar) {
-    return str.substring(0, index) + newChar + str.substring(index + 1);
+  private boolean hasValidPath(int x, int y, int goalX, int goalY, CoordinateNode prevNode) {
+    if (x == goalX && y == goalY) {
+      return true;
+    }
+    if (x < 0 || y < 0 || x >= map.length || y >= map[x].length() || map[x].charAt(y) == 'X') {
+      return false;
+    }
+    if (prevNode != null && Math.abs(x - prevNode.x) + Math.abs(y - prevNode.y) != 1) {
+      return false;
+    }
+    return hasValidPath(x, y - 1, goalX, goalY, new CoordinateNode(x, y)) ||
+        hasValidPath(x - 1, y, goalX, goalY, new CoordinateNode(x, y)) ||
+        hasValidPath(x + 1, y, goalX, goalY, new CoordinateNode(x, y)) ||
+        hasValidPath(x, y + 1, goalX, goalY, new CoordinateNode(x, y));
   }
 
-  private boolean isOutOfBounds(int x, int y) {
-    return x < 0 || y < 0 || x >= map.length || y >= map[0].length();
+  private void insertSorted(LinkedList list, int x, int y) {
+    CoordinateNode newNode = new CoordinateNode(x, y);
+    list.head = insertSorted(list.head, newNode);
   }
 
-  private boolean isVisited(int x, int y, boolean[][] visited) {
-    return visited[x][y];
+  private CoordinateNode insertSorted(CoordinateNode current, CoordinateNode newNode) {
+    if (current == null || newNode.y < current.y || (newNode.y == current.y && newNode.x < current.x)) {
+      newNode.next = current;
+      return newNode;
+    }
+    current.next = insertSorted(current.next, newNode);
+    return current;
   }
-
-  private boolean isBlocked(int x, int y) {
-    return map[x].charAt(y) == 'X';
-  }
-
-  private String mapToString(String[] map, int i) {
-    if (i == map.length) {
-      return "";
-    }
-    return map[i] + "\n" + mapToString(map, i+1);
-  }
-
-
-      public LinkedList validStarts(int goalX, int goalY) {
-        LinkedList validStartsList = new LinkedList();
-        validStartsRecursive(0, 0, goalX, goalY, validStartsList);
-        return validStartsList;
-    }
-    
-    private void validStartsRecursive(int x, int y, int goalX, int goalY, LinkedList validStartsList) {
-        if (x >= map.length) {
-            return;
-        }
-        if (y >= map[x].length()) {
-            validStartsRecursive(x + 1, 0, goalX, goalY, validStartsList);
-            return;
-        }
-        if (hasValidPath(x, y, goalX, goalY, null)) {
-            insertSorted(validStartsList, x, y);
-        }
-        validStartsRecursive(x, y + 1, goalX, goalY, validStartsList);
-    }
-    
-    private boolean hasValidPath(int x, int y, int goalX, int goalY, CoordinateNode prevNode) {
-        if (x == goalX && y == goalY) {
-            return true;
-        }
-        if (x < 0 || y < 0 || x >= map.length || y >= map[x].length() || map[x].charAt(y) == 'X') {
-            return false;
-        }
-        if (prevNode != null && Math.abs(x - prevNode.x) + Math.abs(y - prevNode.y) != 1) {
-            return false;
-        }
-        return hasValidPath(x, y - 1, goalX, goalY, new CoordinateNode(x, y)) ||
-                hasValidPath(x - 1, y, goalX, goalY, new CoordinateNode(x, y)) ||
-                hasValidPath(x + 1, y, goalX, goalY, new CoordinateNode(x, y)) ||
-                hasValidPath(x, y + 1, goalX, goalY, new CoordinateNode(x, y));
-    }
-    
-    private void insertSorted(LinkedList list, int x, int y) {
-        CoordinateNode newNode = new CoordinateNode(x, y);
-        list.head = insertSorted(list.head, newNode);
-    }
-    
-    private CoordinateNode insertSorted(CoordinateNode current, CoordinateNode newNode) {
-        if (current == null || newNode.y < current.y || (newNode.y == current.y && newNode.x < current.x)) {
-            newNode.next = current;
-            return newNode;
-        }
-        current.next = insertSorted(current.next, newNode);
-        return current;
-    }
 
 }
