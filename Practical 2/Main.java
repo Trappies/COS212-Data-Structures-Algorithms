@@ -1,0 +1,51 @@
+public class Main {
+    public static void main(String[] args) {
+        BST<Integer> bst = new BST<>();
+        bst.insert(50);
+        bst.insert(30);
+        bst.insert(70);
+        bst.insert(20);
+        bst.insert(40);
+        bst.insert(60);
+        bst.insert(80);
+        System.out.println("Search Path for 30: " + bst.printSearchPath(30));
+        System.out.println("Search Path for 100: " + bst.printSearchPath(100));
+        System.out.println("Search Path for 50: " + bst.printSearchPath(50));
+        System.out.println("Search Path for 70: " + bst.printSearchPath(70));
+        System.out.println("Search Path for 20: " + bst.printSearchPath(20));
+        System.out.println("Search Path for 40: " + bst.printSearchPath(40));
+        System.out.println("Search Path for 60: " + bst.printSearchPath(60));
+        System.out.println("Search Path for 80: " + bst.printSearchPath(80));
+        System.out.println("Does the tree contain 30?: " + bst.contains(30));
+        System.out.println("Does the tree contain 100?: " + bst.contains(100));
+        System.out.println("Maximum of the tree: " + bst.findMax().data);
+        System.out.println("Minimum of the tree: " + bst.findMin().data);
+        System.out.println("Node containing 60: " + bst.getNode(60));
+        System.out.println("Node containing 90: " + bst.getNode(90));
+        System.out.println("Number of leaves: " + bst.getNumLeaves());
+        System.out.println("Height of the tree: " + bst.getHeight());
+        System.out.println("Is the tree superficially balanced?: " + bst.isSuperficiallyBalanced());
+        BST<Integer> subtree = bst.extractBiggestSuperficiallyBalancedSubTree();
+        System.out.println("Subtree: " + subtree);
+        bst.delete(20);
+        bst.delete(80);
+        System.out.println("After deletion of 20 and 80:");
+        System.out.println("Number of leaves: " + bst.getNumLeaves());
+        System.out.println("Is the tree superficially balanced?: " + bst.isSuperficiallyBalanced());
+        System.out.println("Height of the tree: " + bst.getHeight());
+        BinaryNode<Integer> node1 = new BinaryNode<>(10);
+        BinaryNode<Integer> node2 = new BinaryNode<>(20);
+        BinaryNode<Integer> node3 = new BinaryNode<>(30);
+        node1.left = node2;
+        node1.right = node3;
+        System.out.println("Tree Structure:");
+        System.out.println(node1);
+        BinaryNode<String> strNode1 = new BinaryNode<>("Giles");
+        BinaryNode<String> strNode2 = new BinaryNode<>("For");
+        BinaryNode<String> strNode3 = new BinaryNode<>("President");
+        strNode1.left = strNode2;
+        strNode1.right = strNode3;
+        System.out.println("String Tree Structure:");
+        System.out.println(strNode1);
+    }
+}
